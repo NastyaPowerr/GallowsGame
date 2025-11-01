@@ -1,7 +1,167 @@
 package org.learning;
 
-public class Main {
-    public static void main(String[] args) {
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
 
+public class Main {
+    static List<String> dictionary = List.of("окно", "дерево", "молоко", "учитель", "солнце", "компьютер", "телефон");
+    static Scanner scanner = new Scanner(System.in);
+    static Random rndm = new Random();
+    static char[] usedLetters = new char[33];
+    static int indexUsedLetters = 0;
+    static int incorrectGuesse = 6;
+    static int correctGuesse = 0;
+
+    public static void main(String[] args) {
+        startGame();
+    }
+
+    private static void startGame() {
+        System.out.println("Нажмите 'С' для начала игры или 'В' для выхода из игры.");
+        String line = scanner.next();
+        while (!(line.equals("С") || line.equals("В"))) {
+            System.out.println("Нажмите 'С' для начала игры или 'В' для выхода из игры.");
+            line = scanner.next();
+        }
+        if (line.equals("С")) {
+            midGame();
+        } else {
+            System.exit(0);
+        }
+    }
+
+    private static void midGame() {
+        int wordIndex = rndm.nextInt(dictionary.size());
+        char[] word = dictionary.get(wordIndex).toCharArray();
+        int mask = word.length;
+        char[] visibleWord = new char[mask];
+        System.out.println("only i see it: " + Arrays.toString(word));
+
+        Arrays.fill(visibleWord, ('*'));
+        showWord(visibleWord);
+        while (incorrectGuesse != 0 && correctGuesse != word.length) {
+            repeat(visibleWord, mask, word);
+        }
+        endGame(word);
+    }
+
+    private static void repeat(char[] visibleWord, int mask, char[] word) {
+        System.out.println();
+        System.out.println("Введите букву:");
+        String line = scanner.next();
+        while (line.length() != 1) {
+            System.out.println("Введите букву:");
+            line = scanner.next();
+        }
+        char letter = line.charAt(0);
+        usedLetters[indexUsedLetters++] = letter;
+        boolean rightGuess = false;
+        for (int i = 0; i < mask; i++) {
+            if (letter == word[i]) {
+                visibleWord[i] = letter;
+                correctGuesse++;
+                rightGuess = true;
+            }
+        }
+        if (!rightGuess) {
+            System.out.println("Ой! Такой буквы нет!");
+            incorrectGuesse--;
+            System.out.println("У вас осталось " + incorrectGuesse + " попыток"); // изменить склонение
+            drawHangman();
+        }
+        showWord(visibleWord);
+        System.out.println();
+        showUsedLetters();
+    }
+
+    private static void drawHangman() {
+        switch (incorrectGuesse) {
+            case 5:
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                break;
+            case 4:
+                System.out.println(" ---");
+                System.out.println("|/  |");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                break;
+            case 3:
+                System.out.println(" ---");
+                System.out.println("|/  |");
+                System.out.println("|   *");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                break;
+            case 2:
+                System.out.println(" ---");
+                System.out.println("|/  |");
+                System.out.println("|   *");
+                System.out.println("|  /||");
+                System.out.println("|");
+                System.out.println("|");
+                System.out.println("|");
+                break;
+            case 1:
+                System.out.println(" ---");
+                System.out.println("|/  |");
+                System.out.println("|   *");
+                System.out.println("|  /||");
+                System.out.println("|   |");
+                System.out.println("|");
+                System.out.println("|");
+                break;
+            case 0:
+                System.out.println(" ---");
+                System.out.println("|/  |");
+                System.out.println("|   *");
+                System.out.println("|  /||");
+                System.out.println("|   |");
+                System.out.println("|  /\\");
+                System.out.println("|");
+                break;
+        }
+    }
+
+    private static void showWord(char[] visibleWord) {
+        System.out.println();
+        System.out.println("Ваше слово: ");
+        for (int i = 0; i < visibleWord.length; i++) {
+            System.out.print(visibleWord[i]);
+        }
+    }
+
+    private static void showUsedLetters() {
+        System.out.println();
+        System.out.println("Использованы буквы: ");
+        for (int i = 0; i < indexUsedLetters; i++) {
+            System.out.print(usedLetters[i] + " ");
+        }
+    }
+
+    private static void endGame(char[] word) {
+        if (incorrectGuesse == 0) {
+            System.out.println("Вы проиграли!");
+        } else {
+            if (correctGuesse == word.length) {
+                System.out.println("Поздравляю, Вы выиграли!");
+            }
+        }
+        usedLetters = new char[33];
+        indexUsedLetters = 0;
+        incorrectGuesse = 6;
+        correctGuesse = 0;
+        startGame();
     }
 }
