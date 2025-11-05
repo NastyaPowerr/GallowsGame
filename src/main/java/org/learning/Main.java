@@ -1,12 +1,15 @@
 package org.learning;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
-    static List<String> dictionary = List.of("окно", "дерево", "молоко", "учитель", "солнце", "компьютер", "телефон");
+    static List<String> dictionary;
     static Scanner scanner = new Scanner(System.in);
     static Random rndm = new Random();
     static char[] usedLetters = new char[33];
@@ -15,7 +18,22 @@ public class Main {
     static int correctGuesse = 0;
 
     public static void main(String[] args) {
+        if (readDictionary()) return;
         startGame();
+    }
+
+    private static boolean readDictionary() {
+        try {
+            dictionary = Files.readAllLines(Path.of("src/main/resources/dictionary.txt"));
+        } catch (IOException ex) {
+            System.out.println("Файл не найден.");
+            return true;
+        }
+        if (dictionary.isEmpty()) {
+            System.out.println("Файл со словами пуст.");
+            return true;
+        }
+        return false;
     }
 
     private static void startGame() {
@@ -153,6 +171,7 @@ public class Main {
     private static void endGame(char[] word) {
         if (incorrectGuesse == 0) {
             System.out.println("Вы проиграли!");
+            System.out.println();
         } else {
             if (correctGuesse == word.length) {
                 System.out.println("Поздравляю, Вы выиграли!");
