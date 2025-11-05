@@ -68,12 +68,7 @@ public class Main {
     private static void repeat(char[] visibleWord, int mask, char[] word) {
         System.out.println();
         System.out.println("Введите букву:");
-        String line = scanner.next();
-        while (line.length() != 1) {
-            System.out.println("Введите букву:");
-            line = scanner.next();
-        }
-        char letter = line.charAt(0);
+        char letter = validateLetter();
         if (!addUsedLetter(letter)) {
             System.out.println("Вы уже вводили такую букву!");
             showUsedLetters();
@@ -96,6 +91,24 @@ public class Main {
         showWord(visibleWord);
         System.out.println();
         showUsedLetters();
+    }
+
+    private static char validateLetter() {
+        String line = scanner.next();
+        while (line.length() != 1) {
+            System.out.println("Введите букву:");
+            line = scanner.next();
+        }
+        char letter = line.charAt(0);
+        if (letter >= 'А' && letter <= 'Я' || letter == 'Ё') {
+            line = line.toLowerCase();
+            return line.charAt(0);
+        }
+        if (letter >= 'а' && letter <= 'я' || letter == 'ё') {
+            return letter;
+        }
+        System.out.println("Введите русскую букву:");
+        return validateLetter();
     }
 
     private static void showIncorrectGuesses() {
