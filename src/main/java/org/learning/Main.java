@@ -90,12 +90,21 @@ public class Main {
         if (!rightGuess) {
             System.out.println("Ой! Такой буквы нет!");
             incorrectGuesse--;
-            System.out.println("У вас осталось " + incorrectGuesse + " попыток"); // изменить склонение
+            showIncorrectGuesses();
             drawHangman();
         }
         showWord(visibleWord);
         System.out.println();
         showUsedLetters();
+    }
+
+    private static void showIncorrectGuesses() {
+        String attempt = switch (incorrectGuesse) {
+            case 4, 3, 2 -> " попытки";
+            case 1 -> " попытка";
+            default -> " попыток";
+        };
+        System.out.println("У вас осталось " + incorrectGuesse + attempt);
     }
 
     private static boolean addUsedLetter(char letter) {
