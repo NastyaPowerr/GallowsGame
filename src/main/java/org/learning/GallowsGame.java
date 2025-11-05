@@ -128,12 +128,7 @@ public class GallowsGame {
     }
 
     private static void showRemainingAttempts() {
-        String attempt = switch (remainingAttempts) {
-            case 4, 3, 2 -> " попытки";
-            case 1 -> " попытка";
-            default -> " попыток";
-        };
-        System.out.println("У вас осталось " + remainingAttempts + attempt);
+        System.out.println("Осталось попыток: " + remainingAttempts);
     }
 
     private static boolean isUsedLetter(char letter) {
