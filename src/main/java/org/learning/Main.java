@@ -6,102 +6,120 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class Main {
-    private static List<String> dictionary;
+    private static final Character START_GAME_CHAR = 'С';
+    private static final Character END_GAME_CHAR = 'В';
+    private static final String START_MESSAGE = String.format(
+            "Нажмите '%s' для начала игры или '%s' для выхода из игры.",
+            START_GAME_CHAR,
+            END_GAME_CHAR
+    );
+    private static final String INPUT_LETTER_MESSAGE = "\nВведите букву: ";
+    private static final String DICTIONARY_PATH = "src/main/resources/dictionary.txt";
+    private static final int MAX_ATTEMPTS = 6;
     private static final Scanner scanner = new Scanner(System.in);
     private static final Random random = new Random();
+    private static List<String> dictionary;
     private static Set<Character> usedLetters = new HashSet<>();
-    private static int remainingAttempts = 6;
-    private static int correctGuess = 0;
+    private static int remainingAttempts = MAX_ATTEMPTS;
+    private static int correctLettersCount = 0;
 
     public static void main(String[] args) {
-        if (loadDictionary()) return;
+        try {
+            loadDictionary();
+        } catch (IOException | IllegalStateException ex) {
+            System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
+            return;
+        }
         showMainMenu();
     }
 
-    private static boolean loadDictionary() {
+    private static void loadDictionary() throws IOException {
         try {
-            dictionary = Files.readAllLines(Path.of("src/main/resources/dictionary.txt"));
+            dictionary = Files.readAllLines(Path.of(DICTIONARY_PATH));
         } catch (IOException ex) {
-            System.out.println("Файл не найден.");
-            return true;
+            throw new IOException("файл словаря не найден в " + ex.getMessage());
         }
         if (dictionary.isEmpty()) {
-            System.out.println("Файл со словами пуст.");
-            return true;
+            throw new IllegalStateException("файл словаря пуст");
         }
-        return false;
     }
 
     private static void showMainMenu() {
-        System.out.println("Нажмите 'С' для начала игры или 'В' для выхода из игры.");
-        String line = scanner.next();
-        while (!(line.equals("С") || line.equals("В"))) {
-            System.out.println("Нажмите 'С' для начала игры или 'В' для выхода из игры.");
-            line = scanner.next();
-        }
-        if (line.equals("С")) {
+        System.out.println(START_MESSAGE);
+        char letter = validateMenuLetter();
+        if (letter == START_GAME_CHAR) {
             startGame();
-        } else {
-            System.exit(0);
         }
     }
 
     private static void startGame() {
         int wordIndex = random.nextInt(dictionary.size());
         char[] word = dictionary.get(wordIndex).toCharArray();
-        char[] visibleWord = new char[word.length];
-        Arrays.fill(visibleWord, ('*'));
-        showWord(visibleWord);
-        while (!(remainingAttempts == 0 || correctGuess == word.length)) {
-            guessLetter(visibleWord, word);
+        char[] hiddenWord = new char[word.length];
+        Arrays.fill(hiddenWord, ('*'));
+        showWord(hiddenWord);
+        while (!(remainingAttempts == 0 || correctLettersCount == word.length)) {
+            guessLetter(hiddenWord, word);
         }
         endGame(word);
     }
 
     private static void guessLetter(char[] visibleWord, char[] word) {
-        System.out.println();
-        System.out.println("Введите букву:");
-        char letter = validateLetter();
-        if (!addUsedLetter(letter)) {
+        System.out.println(INPUT_LETTER_MESSAGE);
+        char letter = validateGuessedLetter();
+        if (isUsedLetter(letter)) {
             System.out.println("Вы уже вводили такую букву!");
             showUsedLetters();
             return;
         }
-        boolean rightGuess = false;
-        for (int i = 0; i < word.length; i++) {
-            if (letter == word[i]) {
-                visibleWord[i] = letter;
-                correctGuess++;
-                rightGuess = true;
-            }
-        }
-        if (!rightGuess) {
+        if (!isCorrectGuess(visibleWord, word, letter)) {
             System.out.println("Ой! Такой буквы нет!");
             remainingAttempts--;
             showRemainingAttempts();
             drawHangman();
         }
         showWord(visibleWord);
-        System.out.println();
         showUsedLetters();
     }
 
-    private static char validateLetter() {
+    private static boolean isCorrectGuess(char[] visibleWord, char[] word, char letter) {
+        boolean correctGuess = false;
+        for (int i = 0; i < word.length; i++) {
+            if (letter == word[i]) {
+                visibleWord[i] = letter;
+                correctLettersCount++;
+                correctGuess = true;
+            }
+        }
+        return correctGuess;
+    }
+
+    private static char validateGuessedLetter() {
         String line = scanner.next();
         while (line.length() != 1) {
-            System.out.println("Введите букву:");
+            System.out.println(INPUT_LETTER_MESSAGE);
             line = scanner.next();
         }
+        line = line.toLowerCase();
         char letter = line.charAt(0);
-        if (letter >= 'А' && letter <= 'Я' || letter == 'Ё') {
-            line = line.toLowerCase();
-            return line.charAt(0);
-        }
         if (letter >= 'а' && letter <= 'я' || letter == 'ё') {
             return letter;
         }
-        System.out.println("Введите русскую букву:");
-        return validateLetter();
+        System.out.println(INPUT_LETTER_MESSAGE);
+        return validateGuessedLetter();
+    }
+
+    private static char validateMenuLetter() {
+        String line = scanner.next();
+        while (line.length() != 1) {
+            System.out.println(START_MESSAGE);
+            line = scanner.next();
+        }
+        while (!(line.charAt(0) == START_GAME_CHAR || line.charAt(0) == END_GAME_CHAR)) {
+            System.out.println(START_MESSAGE);
+            line = scanner.next();
+        }
+        return line.charAt(0);
     }
 
     private static void showRemainingAttempts() {
@@ -113,13 +131,12 @@ public class Main {
         System.out.println("У вас осталось " + remainingAttempts + attempt);
     }
 
-    private static boolean addUsedLetter(char letter) {
+    private static boolean isUsedLetter(char letter) {
         if (usedLetters.contains(letter)) {
-                return false;
-            }
-
+            return true;
+        }
         usedLetters.add(letter);
-        return true;
+        return false;
     }
 
     private static void drawHangman() {
@@ -181,10 +198,9 @@ public class Main {
     }
 
     private static void showWord(char[] visibleWord) {
-        System.out.println();
         System.out.println("Ваше слово: ");
-        for (int i = 0; i < visibleWord.length; i++) {
-            System.out.print(visibleWord[i]);
+        for (char c : visibleWord) {
+            System.out.print(c + " ");
         }
     }
 
@@ -197,16 +213,26 @@ public class Main {
 
     private static void endGame(char[] word) {
         if (remainingAttempts == 0) {
-            System.out.println("Вы проиграли!");
-            System.out.println();
-        } else {
-            if (correctGuess == word.length) {
-                System.out.println("Поздравляю, Вы выиграли!");
-            }
+            printLoseMessage();
         }
-        usedLetters = new HashSet<>();
-        remainingAttempts = 6;
-        correctGuess = 0;
+        if (correctLettersCount == word.length) {
+            printWinMessage();
+        }
+        resetGameState();
         showMainMenu();
+    }
+
+    private static void printLoseMessage() {
+        System.out.println("Поздравляю, Вы выиграли!");
+    }
+
+    private static void printWinMessage() {
+        System.out.println("Вы проиграли!");
+    }
+
+    private static void resetGameState() {
+        usedLetters = new HashSet<>();
+        remainingAttempts = MAX_ATTEMPTS;
+        correctLettersCount = 0;
     }
 }
