@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-public class Main {
+public class GallowsGame {
     private static final Character START_GAME_CHAR = 'С';
     private static final Character END_GAME_CHAR = 'В';
     private static final String START_MESSAGE = String.format(
@@ -19,7 +19,7 @@ public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static final Random random = new Random();
     private static List<String> dictionary;
-    private static Set<Character> usedLetters = new HashSet<>();
+    private static Set<Character> usedLetters = new LinkedHashSet<>();
     private static int remainingAttempts = MAX_ATTEMPTS;
     private static int correctLettersCount = 0;
 
@@ -30,21 +30,22 @@ public class Main {
             System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
             return;
         }
-        showMainMenu();
+        runMainMenu();
     }
 
     private static void loadDictionary() throws IOException {
+        Path dictionaryPath = Path.of(DICTIONARY_PATH);
         try {
-            dictionary = Files.readAllLines(Path.of(DICTIONARY_PATH));
+            dictionary = Files.readAllLines(dictionaryPath);
         } catch (IOException ex) {
-            throw new IOException("файл словаря не найден в " + ex.getMessage());
+            throw new IOException("файл словаря не найден в " + dictionaryPath.toAbsolutePath());
         }
         if (dictionary.isEmpty()) {
             throw new IllegalStateException("файл словаря пуст");
         }
     }
 
-    private static void showMainMenu() {
+    private static void runMainMenu() {
         System.out.println(START_MESSAGE);
         char letter = validateMenuLetter();
         if (letter == START_GAME_CHAR) {
@@ -55,38 +56,42 @@ public class Main {
     private static void startGame() {
         int wordIndex = random.nextInt(dictionary.size());
         char[] word = dictionary.get(wordIndex).toCharArray();
-        char[] hiddenWord = new char[word.length];
-        Arrays.fill(hiddenWord, ('*'));
-        showWord(hiddenWord);
+        char[] maskedWord = new char[word.length];
+        Arrays.fill(maskedWord, ('*'));
+        showWord(maskedWord);
         while (!(remainingAttempts == 0 || correctLettersCount == word.length)) {
-            guessLetter(hiddenWord, word);
+            guessLetter(maskedWord, word);
         }
         endGame(word);
     }
 
-    private static void guessLetter(char[] visibleWord, char[] word) {
+    private static void guessLetter(char[] maskedWord, char[] word) {
         System.out.println(INPUT_LETTER_MESSAGE);
         char letter = validateGuessedLetter();
         if (isUsedLetter(letter)) {
-            System.out.println("Вы уже вводили такую букву!");
+            System.out.println("Вы уже вводили такую букву.");
             showUsedLetters();
             return;
         }
-        if (!isCorrectGuess(visibleWord, word, letter)) {
-            System.out.println("Ой! Такой буквы нет!");
+        if (!isCorrectGuess(maskedWord, word, letter)) {
+            System.out.println("Ой! Такой буквы нет.");
             remainingAttempts--;
             showRemainingAttempts();
             drawHangman();
         }
-        showWord(visibleWord);
+        showWord(maskedWord);
         showUsedLetters();
     }
 
-    private static boolean isCorrectGuess(char[] visibleWord, char[] word, char letter) {
+    private static void drawHangman() {
+        System.out.println(GallowsPicture.getPictures()[remainingAttempts]);
+    }
+
+    private static boolean isCorrectGuess(char[] maskedWord, char[] word, char letter) {
         boolean correctGuess = false;
         for (int i = 0; i < word.length; i++) {
             if (letter == word[i]) {
-                visibleWord[i] = letter;
+                maskedWord[i] = letter;
                 correctLettersCount++;
                 correctGuess = true;
             }
@@ -139,67 +144,9 @@ public class Main {
         return false;
     }
 
-    private static void drawHangman() {
-        switch (remainingAttempts) {
-            case 5:
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                break;
-            case 4:
-                System.out.println(" ---");
-                System.out.println("|/  |");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                break;
-            case 3:
-                System.out.println(" ---");
-                System.out.println("|/  |");
-                System.out.println("|   *");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                break;
-            case 2:
-                System.out.println(" ---");
-                System.out.println("|/  |");
-                System.out.println("|   *");
-                System.out.println("|  /||");
-                System.out.println("|");
-                System.out.println("|");
-                System.out.println("|");
-                break;
-            case 1:
-                System.out.println(" ---");
-                System.out.println("|/  |");
-                System.out.println("|   *");
-                System.out.println("|  /||");
-                System.out.println("|   |");
-                System.out.println("|");
-                System.out.println("|");
-                break;
-            case 0:
-                System.out.println(" ---");
-                System.out.println("|/  |");
-                System.out.println("|   *");
-                System.out.println("|  /||");
-                System.out.println("|   |");
-                System.out.println("|  /\\");
-                System.out.println("|");
-                break;
-        }
-    }
-
-    private static void showWord(char[] visibleWord) {
+    private static void showWord(char[] maskedWord) {
         System.out.println("Ваше слово: ");
-        for (char c : visibleWord) {
+        for (char c : maskedWord) {
             System.out.print(c + " ");
         }
     }
@@ -207,31 +154,32 @@ public class Main {
     private static void showUsedLetters() {
         System.out.println("\nИспользованы буквы: ");
         for (char c : usedLetters) {
-            System.out.print(c);
+            System.out.print(c + " ");
         }
     }
 
     private static void endGame(char[] word) {
         if (remainingAttempts == 0) {
             printLoseMessage();
+            System.out.println("Загаданным словом было - " + new String(word));
         }
         if (correctLettersCount == word.length) {
             printWinMessage();
         }
         resetGameState();
-        showMainMenu();
+        runMainMenu();
     }
 
     private static void printLoseMessage() {
-        System.out.println("Поздравляю, Вы выиграли!");
+        System.out.println("\nВы проиграли!");
     }
 
     private static void printWinMessage() {
-        System.out.println("Вы проиграли!");
+        System.out.println("\nПоздравляю, Вы победили!");
     }
 
     private static void resetGameState() {
-        usedLetters = new HashSet<>();
+        usedLetters = new LinkedHashSet<>();
         remainingAttempts = MAX_ATTEMPTS;
         correctLettersCount = 0;
     }
