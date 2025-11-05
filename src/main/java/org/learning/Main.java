@@ -59,7 +59,7 @@ public class Main {
 
         Arrays.fill(visibleWord, ('*'));
         showWord(visibleWord);
-        while (incorrectGuesse != 0 && correctGuesse != word.length) {
+        while (!(incorrectGuesse == 0 || correctGuesse == word.length)) {
             repeat(visibleWord, mask, word);
         }
         endGame(word);
@@ -74,7 +74,11 @@ public class Main {
             line = scanner.next();
         }
         char letter = line.charAt(0);
-        usedLetters[indexUsedLetters++] = letter;
+        if (!addUsedLetter(letter)) {
+            System.out.println("Вы уже вводили такую букву!");
+            showUsedLetters();
+            return;
+        }
         boolean rightGuess = false;
         for (int i = 0; i < mask; i++) {
             if (letter == word[i]) {
@@ -92,6 +96,16 @@ public class Main {
         showWord(visibleWord);
         System.out.println();
         showUsedLetters();
+    }
+
+    private static boolean addUsedLetter(char letter) {
+        for (int i = 0; i < usedLetters.length; i++) {
+            if (usedLetters[i] == letter) {
+                return false;
+            }
+        }
+        usedLetters[indexUsedLetters++] = letter;
+        return true;
     }
 
     private static void drawHangman() {
