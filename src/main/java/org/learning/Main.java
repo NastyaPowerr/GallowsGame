@@ -3,26 +3,22 @@ package org.learning;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
-    static List<String> dictionary;
-    static Scanner scanner = new Scanner(System.in);
-    static Random rndm = new Random();
-    static char[] usedLetters = new char[33];
-    static int indexUsedLetters = 0;
-    static int incorrectGuesse = 6;
-    static int correctGuesse = 0;
+    private static List<String> dictionary;
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final Random random = new Random();
+    private static Set<Character> usedLetters = new HashSet<>();
+    private static int remainingAttempts = 6;
+    private static int correctGuess = 0;
 
     public static void main(String[] args) {
-        if (readDictionary()) return;
-        startGame();
+        if (loadDictionary()) return;
+        showMainMenu();
     }
 
-    private static boolean readDictionary() {
+    private static boolean loadDictionary() {
         try {
             dictionary = Files.readAllLines(Path.of("src/main/resources/dictionary.txt"));
         } catch (IOException ex) {
@@ -36,7 +32,7 @@ public class Main {
         return false;
     }
 
-    private static void startGame() {
+    private static void showMainMenu() {
         System.out.println("Нажмите 'С' для начала игры или 'В' для выхода из игры.");
         String line = scanner.next();
         while (!(line.equals("С") || line.equals("В"))) {
@@ -44,28 +40,25 @@ public class Main {
             line = scanner.next();
         }
         if (line.equals("С")) {
-            midGame();
+            startGame();
         } else {
             System.exit(0);
         }
     }
 
-    private static void midGame() {
-        int wordIndex = rndm.nextInt(dictionary.size());
+    private static void startGame() {
+        int wordIndex = random.nextInt(dictionary.size());
         char[] word = dictionary.get(wordIndex).toCharArray();
-        int mask = word.length;
-        char[] visibleWord = new char[mask];
-        System.out.println("only i see it: " + Arrays.toString(word));
-
+        char[] visibleWord = new char[word.length];
         Arrays.fill(visibleWord, ('*'));
         showWord(visibleWord);
-        while (!(incorrectGuesse == 0 || correctGuesse == word.length)) {
-            repeat(visibleWord, mask, word);
+        while (!(remainingAttempts == 0 || correctGuess == word.length)) {
+            guessLetter(visibleWord, word);
         }
         endGame(word);
     }
 
-    private static void repeat(char[] visibleWord, int mask, char[] word) {
+    private static void guessLetter(char[] visibleWord, char[] word) {
         System.out.println();
         System.out.println("Введите букву:");
         char letter = validateLetter();
@@ -75,17 +68,17 @@ public class Main {
             return;
         }
         boolean rightGuess = false;
-        for (int i = 0; i < mask; i++) {
+        for (int i = 0; i < word.length; i++) {
             if (letter == word[i]) {
                 visibleWord[i] = letter;
-                correctGuesse++;
+                correctGuess++;
                 rightGuess = true;
             }
         }
         if (!rightGuess) {
             System.out.println("Ой! Такой буквы нет!");
-            incorrectGuesse--;
-            showIncorrectGuesses();
+            remainingAttempts--;
+            showRemainingAttempts();
             drawHangman();
         }
         showWord(visibleWord);
@@ -111,27 +104,26 @@ public class Main {
         return validateLetter();
     }
 
-    private static void showIncorrectGuesses() {
-        String attempt = switch (incorrectGuesse) {
+    private static void showRemainingAttempts() {
+        String attempt = switch (remainingAttempts) {
             case 4, 3, 2 -> " попытки";
             case 1 -> " попытка";
             default -> " попыток";
         };
-        System.out.println("У вас осталось " + incorrectGuesse + attempt);
+        System.out.println("У вас осталось " + remainingAttempts + attempt);
     }
 
     private static boolean addUsedLetter(char letter) {
-        for (int i = 0; i < usedLetters.length; i++) {
-            if (usedLetters[i] == letter) {
+        if (usedLetters.contains(letter)) {
                 return false;
             }
-        }
-        usedLetters[indexUsedLetters++] = letter;
+
+        usedLetters.add(letter);
         return true;
     }
 
     private static void drawHangman() {
-        switch (incorrectGuesse) {
+        switch (remainingAttempts) {
             case 5:
                 System.out.println("|");
                 System.out.println("|");
@@ -197,26 +189,24 @@ public class Main {
     }
 
     private static void showUsedLetters() {
-        System.out.println();
-        System.out.println("Использованы буквы: ");
-        for (int i = 0; i < indexUsedLetters; i++) {
-            System.out.print(usedLetters[i] + " ");
+        System.out.println("\nИспользованы буквы: ");
+        for (char c : usedLetters) {
+            System.out.print(c);
         }
     }
 
     private static void endGame(char[] word) {
-        if (incorrectGuesse == 0) {
+        if (remainingAttempts == 0) {
             System.out.println("Вы проиграли!");
             System.out.println();
         } else {
-            if (correctGuesse == word.length) {
+            if (correctGuess == word.length) {
                 System.out.println("Поздравляю, Вы выиграли!");
             }
         }
-        usedLetters = new char[33];
-        indexUsedLetters = 0;
-        incorrectGuesse = 6;
-        correctGuesse = 0;
-        startGame();
+        usedLetters = new HashSet<>();
+        remainingAttempts = 6;
+        correctGuess = 0;
+        showMainMenu();
     }
 }
