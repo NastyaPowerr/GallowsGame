@@ -18,6 +18,7 @@ public class GallowsGame {
     private static final int MAX_ATTEMPTS = 6;
     private static final Scanner scanner = new Scanner(System.in);
     private static final Random random = new Random();
+    private static final GallowsPicture gallowsPicture = new GallowsPicture();
     private static List<String> dictionary;
     private static Set<Character> usedLetters = new LinkedHashSet<>();
     private static int remainingAttempts = MAX_ATTEMPTS;
@@ -84,7 +85,7 @@ public class GallowsGame {
     }
 
     private static void drawHangman() {
-        System.out.println(GallowsPicture.getPictures()[remainingAttempts]);
+        System.out.println(gallowsPicture.getPictures(remainingAttempts));
     }
 
     private static boolean isCorrectGuess(char[] maskedWord, char[] word, char letter) {

@@ -51,7 +51,7 @@ public class GallowsPicture {
     """
     };
 
-    public static String[] getPictures() {
-        return PICTURES;
+    public String getPictures(int remainingAttempts) {
+        return PICTURES[remainingAttempts];
     }
 }
