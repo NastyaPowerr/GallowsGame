@@ -6,14 +6,14 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class GallowsGame {
-    private static final Character START_GAME_CHAR = 'С';
-    private static final Character END_GAME_CHAR = 'В';
+    private static final char START_GAME_KEY = 'С';
+    private static final char END_GAME_KEY = 'В';
     private static final String START_MESSAGE = String.format(
-            "Нажмите '%s' для начала игры или '%s' для выхода из игры.",
-            START_GAME_CHAR,
-            END_GAME_CHAR
+            "Введите '%s' для начала игры или '%s' для выхода из игры.",
+            START_GAME_KEY,
+            END_GAME_KEY
     );
-    private static final String INPUT_LETTER_MESSAGE = "\nВведите букву: ";
+    private static final String INPUT_LETTER_MESSAGE = "Введите букву русского алфавита: ";
     private static final String DICTIONARY_PATH = "src/main/resources/dictionary.txt";
     private static final int MAX_ATTEMPTS = 6;
     private static final Scanner scanner = new Scanner(System.in);
@@ -25,31 +25,31 @@ public class GallowsGame {
     private static int correctLettersCount = 0;
 
     public static void main(String[] args) {
-        try {
-            loadDictionary();
-        } catch (IOException | IllegalStateException ex) {
-            System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
-            return;
-        }
         runMainMenu();
     }
 
-    private static void loadDictionary() throws IOException {
+    private static void loadDictionary() {
         Path dictionaryPath = Path.of(DICTIONARY_PATH);
         try {
             dictionary = Files.readAllLines(dictionaryPath);
         } catch (IOException ex) {
-            throw new IOException("файл словаря не найден в " + dictionaryPath.toAbsolutePath());
+            throw new RuntimeException("Dictionary file not found: " + dictionaryPath.toAbsolutePath());
         }
         if (dictionary.isEmpty()) {
-            throw new IllegalStateException("файл словаря пуст");
+            throw new IllegalStateException("Dictionary file is empty: " + dictionaryPath.toAbsolutePath());
         }
     }
 
     private static void runMainMenu() {
         System.out.println(START_MESSAGE);
         char letter = validateMenuLetter();
-        if (letter == START_GAME_CHAR) {
+        if (Character.toUpperCase(letter) == START_GAME_KEY) {
+            try {
+                loadDictionary();
+            } catch (RuntimeException ex) {
+                System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
+                return;
+            }
             startGame();
         }
     }
@@ -67,6 +67,7 @@ public class GallowsGame {
     }
 
     private static void guessLetter(char[] maskedWord, char[] word) {
+        System.out.println();
         System.out.println(INPUT_LETTER_MESSAGE);
         char letter = validateGuessedLetter();
         if (isUsedLetter(letter)) {
@@ -103,6 +104,7 @@ public class GallowsGame {
     private static char validateGuessedLetter() {
         String line = scanner.next();
         while (line.length() != 1) {
+            System.out.println();
             System.out.println(INPUT_LETTER_MESSAGE);
             line = scanner.next();
         }
@@ -111,6 +113,7 @@ public class GallowsGame {
         if (letter >= 'а' && letter <= 'я' || letter == 'ё') {
             return letter;
         }
+        System.out.println();
         System.out.println(INPUT_LETTER_MESSAGE);
         return validateGuessedLetter();
     }
@@ -121,7 +124,7 @@ public class GallowsGame {
             System.out.println(START_MESSAGE);
             line = scanner.next();
         }
-        while (!(line.charAt(0) == START_GAME_CHAR || line.charAt(0) == END_GAME_CHAR)) {
+        while (!(Character.toUpperCase(line.charAt(0)) == START_GAME_KEY || Character.toUpperCase(line.charAt(0)) == END_GAME_KEY)) {
             System.out.println(START_MESSAGE);
             line = scanner.next();
         }
