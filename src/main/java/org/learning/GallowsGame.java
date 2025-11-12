@@ -13,6 +13,7 @@ public class GallowsGame {
             START_GAME_KEY,
             END_GAME_KEY
     );
+    private static final char HIDDEN_LETTER_SYMBOL = '*';
     private static final String INPUT_LETTER_MESSAGE = "Введите букву русского алфавита: ";
     private static final String DICTIONARY_PATH = "src/main/resources/dictionary.txt";
     private static final int MAX_ATTEMPTS = 6;
@@ -25,7 +26,11 @@ public class GallowsGame {
     private static int correctLettersCount = 0;
 
     public static void main(String[] args) {
-        runMainMenu();
+        try {
+            runMainMenu();
+        } catch (RuntimeException ex) {
+            System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
+        }
     }
 
     private static void loadDictionary() {
@@ -42,46 +47,51 @@ public class GallowsGame {
 
     private static void runMainMenu() {
         System.out.println(START_MESSAGE);
-        char letter = validateMenuLetter();
+        char letter = readMenuChoice();
         if (Character.toUpperCase(letter) == START_GAME_KEY) {
-            try {
-                loadDictionary();
-            } catch (RuntimeException ex) {
-                System.out.println("Ошибка при загрузке файла: " + ex.getMessage() + ". Работа программы завершена.");
-                return;
-            }
             startGame();
         }
     }
 
     private static void startGame() {
-        int wordIndex = random.nextInt(dictionary.size());
-        char[] word = dictionary.get(wordIndex).toCharArray();
-        char[] maskedWord = new char[word.length];
-        Arrays.fill(maskedWord, ('*'));
-        showWord(maskedWord);
-        while (!(remainingAttempts == 0 || correctLettersCount == word.length)) {
-            guessLetter(maskedWord, word);
+        loadDictionary();
+        String secretWord = getSecretWord();
+        char[] secretWordMask = createMask(secretWord);
+
+        showWord(secretWordMask);
+        while (!isGameOver(secretWord)) {
+            processGuess(secretWordMask, secretWord);
+            showGameStatus(secretWordMask);
         }
-        endGame(word);
+        endGame(secretWord);
     }
 
-    private static void guessLetter(char[] maskedWord, char[] word) {
+    private static boolean isGameOver(String secretWord) {
+        return remainingAttempts == 0 || correctLettersCount == secretWord.length();
+    }
+
+    private static char[] createMask(String secretWord) {
+        char[] secretWordMask = new char[secretWord.length()];
+        Arrays.fill(secretWordMask, HIDDEN_LETTER_SYMBOL);
+        return secretWordMask;
+    }
+
+    private static String getSecretWord() {
+        int wordIndex = random.nextInt(dictionary.size());
+        return dictionary.get(wordIndex);
+    }
+
+    private static void processGuess(char[] maskedWord, String word) {
         System.out.println();
         System.out.println(INPUT_LETTER_MESSAGE);
-        char letter = validateGuessedLetter();
-        if (isUsedLetter(letter)) {
-            System.out.println("Вы уже вводили такую букву.");
-            showUsedLetters();
-            return;
-        }
-        if (!isCorrectGuess(maskedWord, word, letter)) {
-            System.out.println("Ой! Такой буквы нет.");
-            remainingAttempts--;
-            showRemainingAttempts();
-            drawHangman();
-        }
-        showWord(maskedWord);
+        char letter = readGuessedLetter();
+        isCorrectGuess(maskedWord, word, letter);
+    }
+
+    private static void showGameStatus(char[] secretWordMask) {
+        drawHangman();
+        showWord(secretWordMask);
+        showRemainingAttempts();
         showUsedLetters();
     }
 
@@ -89,36 +99,48 @@ public class GallowsGame {
         System.out.println(gallowsPicture.getPictures(remainingAttempts));
     }
 
-    private static boolean isCorrectGuess(char[] maskedWord, char[] word, char letter) {
-        boolean correctGuess = false;
-        for (int i = 0; i < word.length; i++) {
-            if (letter == word[i]) {
+    private static void isCorrectGuess(char[] maskedWord, String word, char letter) {
+        if (isUsedLetter(letter)) {
+            System.out.println("Вы уже вводили такую букву.");
+            return;
+        }
+        if (!revealMatchLetters(maskedWord, word, letter)) {
+            System.out.println("Ой! Такой буквы нет.");
+            remainingAttempts--;
+        }
+    }
+
+    private static boolean revealMatchLetters(char[] maskedWord, String word, char letter) {
+        boolean isLetterInMask = false;
+        for (int i = 0; i < word.length(); i++) {
+            if (letter == word.charAt(i)) {
                 maskedWord[i] = letter;
                 correctLettersCount++;
-                correctGuess = true;
+                isLetterInMask = true;
             }
         }
-        return correctGuess;
+        return isLetterInMask;
     }
 
-    private static char validateGuessedLetter() {
-        String line = scanner.next();
-        while (line.length() != 1) {
+    private static char readGuessedLetter() {
+        while (true) {
+            String line = scanner.next();
+            while (line.length() != 1) {
+                System.out.println();
+                System.out.println(INPUT_LETTER_MESSAGE);
+                line = scanner.next();
+            }
+            line = line.toLowerCase();
+            char letter = line.charAt(0);
+            if (letter >= 'а' && letter <= 'я' || letter == 'ё') {
+                return letter;
+            }
             System.out.println();
             System.out.println(INPUT_LETTER_MESSAGE);
-            line = scanner.next();
         }
-        line = line.toLowerCase();
-        char letter = line.charAt(0);
-        if (letter >= 'а' && letter <= 'я' || letter == 'ё') {
-            return letter;
-        }
-        System.out.println();
-        System.out.println(INPUT_LETTER_MESSAGE);
-        return validateGuessedLetter();
     }
 
-    private static char validateMenuLetter() {
+    private static char readMenuChoice() {
         String line = scanner.next();
         while (line.length() != 1) {
             System.out.println(START_MESSAGE);
@@ -157,12 +179,12 @@ public class GallowsGame {
         }
     }
 
-    private static void endGame(char[] word) {
+    private static void endGame(String word) {
         if (remainingAttempts == 0) {
             printLoseMessage();
-            System.out.println("Загаданным словом было - " + new String(word));
+            System.out.println("Загаданным словом было - " + word);
         }
-        if (correctLettersCount == word.length) {
+        if (correctLettersCount == word.length()) {
             printWinMessage();
         }
         resetGameState();
