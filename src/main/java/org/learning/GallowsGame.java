@@ -19,11 +19,9 @@ public class GallowsGame {
     private static final int MAX_ATTEMPTS = 6;
     private static final Scanner scanner = new Scanner(System.in);
     private static final Random random = new Random();
-    private static final GallowsPicture gallowsPicture = new GallowsPicture();
     private static List<String> dictionary;
     private static Set<Character> usedLetters = new LinkedHashSet<>();
     private static int remainingAttempts = MAX_ATTEMPTS;
-    private static int correctLettersCount = 0;
 
     public static void main(String[] args) {
         try {
@@ -59,15 +57,11 @@ public class GallowsGame {
         char[] secretWordMask = createMask(secretWord);
 
         showWord(secretWordMask);
-        while (!isGameOver(secretWord)) {
+        while (!isGameOver(secretWordMask)) {
             processGuess(secretWordMask, secretWord);
             showGameStatus(secretWordMask);
         }
-        endGame(secretWord);
-    }
-
-    private static boolean isGameOver(String secretWord) {
-        return remainingAttempts == 0 || correctLettersCount == secretWord.length();
+        endGame(secretWord, secretWordMask);
     }
 
     private static char[] createMask(String secretWord) {
@@ -81,11 +75,11 @@ public class GallowsGame {
         return dictionary.get(wordIndex);
     }
 
-    private static void processGuess(char[] maskedWord, String word) {
+    private static void processGuess(char[] secretWordMask, String secretWord) {
         System.out.println();
         System.out.println(INPUT_LETTER_MESSAGE);
         char letter = readGuessedLetter();
-        isCorrectGuess(maskedWord, word, letter);
+        isCorrectGuess(secretWordMask, secretWord, letter);
     }
 
     private static void showGameStatus(char[] secretWordMask) {
@@ -96,26 +90,25 @@ public class GallowsGame {
     }
 
     private static void drawHangman() {
-        System.out.println(gallowsPicture.getPictures(remainingAttempts));
+        GallowsRenderer.render(remainingAttempts);
     }
 
-    private static void isCorrectGuess(char[] maskedWord, String word, char letter) {
+    private static void isCorrectGuess(char[] secretWordMask, String secretWord, char letter) {
         if (isUsedLetter(letter)) {
             System.out.println("Вы уже вводили такую букву.");
             return;
         }
-        if (!revealMatchLetters(maskedWord, word, letter)) {
+        if (!revealMatchLetters(secretWordMask, secretWord, letter)) {
             System.out.println("Ой! Такой буквы нет.");
             remainingAttempts--;
         }
     }
 
-    private static boolean revealMatchLetters(char[] maskedWord, String word, char letter) {
+    private static boolean revealMatchLetters(char[] secretWordMask, String secretWord, char letter) {
         boolean isLetterInMask = false;
-        for (int i = 0; i < word.length(); i++) {
-            if (letter == word.charAt(i)) {
-                maskedWord[i] = letter;
-                correctLettersCount++;
+        for (int i = 0; i < secretWord.length(); i++) {
+            if (letter == secretWord.charAt(i)) {
+                secretWordMask[i] = letter;
                 isLetterInMask = true;
             }
         }
@@ -154,6 +147,7 @@ public class GallowsGame {
     }
 
     private static void showRemainingAttempts() {
+        System.out.println();
         System.out.println("Осталось попыток: " + remainingAttempts);
     }
 
@@ -165,43 +159,63 @@ public class GallowsGame {
         return false;
     }
 
-    private static void showWord(char[] maskedWord) {
+    private static void showWord(char[] secretWordMask) {
         System.out.println("Ваше слово: ");
-        for (char c : maskedWord) {
+        for (char c : secretWordMask) {
             System.out.print(c + " ");
         }
     }
 
     private static void showUsedLetters() {
-        System.out.println("\nИспользованы буквы: ");
+        System.out.println("Использованы буквы: ");
         for (char c : usedLetters) {
             System.out.print(c + " ");
         }
     }
 
-    private static void endGame(String word) {
-        if (remainingAttempts == 0) {
-            printLoseMessage();
-            System.out.println("Загаданным словом было - " + word);
+    private static boolean isGameOver(char[] secretWordMask) {
+        return isLose() || isWin(secretWordMask);
+    }
+
+    private static boolean isWin(char[] secretWordMask) {
+        for (char c : secretWordMask) {
+            if (c == HIDDEN_LETTER_SYMBOL) {
+                return false;
+            }
         }
-        if (correctLettersCount == word.length()) {
+        return true;
+    }
+
+    private static boolean isLose() {
+        return remainingAttempts == 0;
+    }
+
+    private static void endGame(String secretWord, char[] secretWordMask) {
+        if (isLose()) {
+            printLoseMessage(secretWord);
+        }
+        if (isWin(secretWordMask)) {
             printWinMessage();
         }
         resetGameState();
         runMainMenu();
     }
 
-    private static void printLoseMessage() {
-        System.out.println("\nВы проиграли!");
+    private static void printLoseMessage(String word) {
+        System.out.println("""
+                
+                Вы проиграли!
+                Загаданным словом было -
+                """ + word);
     }
 
     private static void printWinMessage() {
-        System.out.println("\nПоздравляю, Вы победили!");
+        System.out.println();
+        System.out.println("Поздравляю, Вы победили!");
     }
 
     private static void resetGameState() {
         usedLetters = new LinkedHashSet<>();
         remainingAttempts = MAX_ATTEMPTS;
-        correctLettersCount = 0;
     }
 }

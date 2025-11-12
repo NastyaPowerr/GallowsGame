@@ -1,14 +1,14 @@
 package org.learning;
 
-public class GallowsPicture {
-    private static final String[] PICTURES = {
+public class GallowsRenderer {
+    private static final String[] STAGES = {
             """
       ----
     |/  |
     |   *
     |  /||
     |   |
-    |  /\\
+    |   /\\
     """,
             """
      ----
@@ -48,10 +48,16 @@ public class GallowsPicture {
     |
     |
     |
+    """,
+            """
     """
     };
 
-    public String getPictures(int remainingAttempts) {
-        return PICTURES[remainingAttempts];
+    public static void render(int remainingAttempts) {
+        if (remainingAttempts >= STAGES.length || remainingAttempts < 0) {
+            System.out.println("No stage available for " + remainingAttempts);
+            return;
+        }
+        System.out.println(STAGES[remainingAttempts]);
     }
 }
