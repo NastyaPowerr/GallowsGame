@@ -1,5 +1,9 @@
 package org.learning;
 
+import org.learning.exceptions.DictionaryException;
+import org.learning.exceptions.DictionaryNotFoundException;
+import org.learning.exceptions.EmptyDictionaryException;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +30,7 @@ public class GallowsGame {
     public static void main(String[] args) {
         try {
             runMainMenu();
-        } catch (RuntimeException ex) {
+        } catch (DictionaryException ex) {
             System.out.println("Error loading dictionary: " + ex.getMessage() + ". The program will now be stopped.");
         }
     }
@@ -36,10 +40,10 @@ public class GallowsGame {
         try {
             dictionary = Files.readAllLines(dictionaryPath);
         } catch (IOException ex) {
-            throw new RuntimeException("Dictionary file not found: " + dictionaryPath.toAbsolutePath());
+            throw new DictionaryNotFoundException("Dictionary file not found: " + dictionaryPath.toAbsolutePath());
         }
         if (dictionary.isEmpty()) {
-            throw new IllegalStateException("Dictionary file is empty: " + dictionaryPath.toAbsolutePath());
+            throw new EmptyDictionaryException("Dictionary file is empty: " + dictionaryPath.toAbsolutePath());
         }
     }
 
@@ -57,7 +61,10 @@ public class GallowsGame {
     }
 
     private static void startGame() {
-        loadDictionary();
+        if (dictionary == null) {
+            loadDictionary();
+        }
+       
         String secretWord = getSecretWord();
         char[] secretWordMask = createMask(secretWord);
 

@@ -49,8 +49,7 @@ public class GallowsRenderer {
     |
     |
     """,
-            """
-    """
+    ""
     };
 
     public static void render(int remainingAttempts) {
